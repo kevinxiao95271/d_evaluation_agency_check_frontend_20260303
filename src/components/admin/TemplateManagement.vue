@@ -194,8 +194,23 @@ export default {
     const loadTemplates = async () => {
       try {
         loading.value = true
-        const data = await templateApi.getList()
-        templates.value = data || []
+        const list = await templateApi.getList()
+        if (list && list.length > 0) {
+          // 若列表接口未返回 categories，补充调用 default 接口获取完整内容
+          const hasCategories = list.some(t => t.categories && t.categories.length > 0)
+          if (!hasCategories) {
+            const defaultTemplate = await templateApi.getDefault()
+            templates.value = list.map(t =>
+              t.isDefault ? { ...t, categories: defaultTemplate?.categories || [] } : t
+            )
+          } else {
+            templates.value = list
+          }
+        } else {
+          // 列表为空时直接展示默认模板
+          const defaultTemplate = await templateApi.getDefault()
+          templates.value = defaultTemplate ? [defaultTemplate] : []
+        }
       } catch (error) {
         console.error('加载模板列表失败:', error)
         ElMessage.error('加载模板列表失败')
