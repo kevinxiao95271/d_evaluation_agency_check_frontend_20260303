@@ -194,12 +194,8 @@ export default {
     const loadTemplates = async () => {
       try {
         loading.value = true
-        // const data = await templateApi.getList()
-        // templates.value = data
-        
-        // 模拟数据
-        const defaultTemplate = await templateApi.getDefault()
-        templates.value = [defaultTemplate]
+        const data = await templateApi.getList()
+        templates.value = data || []
       } catch (error) {
         console.error('加载模板列表失败:', error)
         ElMessage.error('加载模板列表失败')

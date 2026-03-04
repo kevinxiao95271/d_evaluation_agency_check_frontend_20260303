@@ -173,11 +173,8 @@ export default {
     
     const loadTasks = async () => {
       try {
-        // 模拟数据
-        tasks.value = [
-          { id: 1, name: '2026年第一季度考核' },
-          { id: 2, name: '2025年第四季度考核' }
-        ]
+        const data = await taskApi.getList()
+        tasks.value = data || []
         
         if (tasks.value.length > 0) {
           selectedTaskId.value = tasks.value[0].id

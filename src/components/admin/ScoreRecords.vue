@@ -342,8 +342,7 @@ export default {
       } catch (error) {
         console.error('加载评分记录失败:', error)
         ElMessage.error('加载评分记录失败')
-        // 如果API失败，使用模拟数据作为后备
-        records.value = generateMockRecords()
+        records.value = []
       } finally {
         loading.value = false
       }
@@ -353,8 +352,8 @@ export default {
     const loadBaseData = async () => {
       try {
         // 加载任务列表
-        const currentTask = await taskApi.getCurrent()
-        tasks.value = currentTask ? [currentTask] : []
+        const taskList = await taskApi.getList()
+        tasks.value = taskList || []
         
         // 加载评委列表
         const judgeList = await judgeApi.getList()
@@ -364,7 +363,8 @@ export default {
         const institutionList = await institutionApi.getList()
         institutions.value = institutionList || []
         
-        // 设置默认任务
+        // 设置默认任务（当前任务优先）
+        const currentTask = tasks.value.find(t => t.isCurrent === 1) || tasks.value[0]
         if (currentTask) {
           filters.value.taskId = currentTask.id
         }
@@ -372,59 +372,7 @@ export default {
       } catch (error) {
         console.error('加载基础数据失败:', error)
         ElMessage.error('加载基础数据失败')
-        
-        // 使用模拟数据作为后备
-        tasks.value = [{ id: 1, name: '2026年第一季度考核' }]
-        judges.value = Array.from({ length: 76 }, (_, i) => ({
-          id: i + 1,
-          name: i < 38 ? `专家${i + 1}` : `大众评委${i - 37}`,
-          type: i < 38 ? 'EXPERT' : 'PUBLIC'
-        }))
-        institutions.value = Array.from({ length: 64 }, (_, i) => ({
-          id: i + 1,
-          name: `机构${i + 1}`
-        }))
       }
-    }
-    
-    // 生成模拟数据
-    const generateMockRecords = () => {
-      const mockData = []
-      const scoreModes = ['TOTAL', 'ITEM']
-      
-      for (let i = 1; i <= 200; i++) {
-        const judgeIndex = Math.floor(Math.random() * 76)
-        const institutionIndex = Math.floor(Math.random() * 64)
-        const scoreMode = scoreModes[Math.floor(Math.random() * 2)]
-        
-        mockData.push({
-          id: i,
-          taskId: 1,
-          taskName: '2026年第一季度考核',
-          judgeId: judgeIndex + 1,
-          judgeName: judgeIndex < 38 ? `专家${judgeIndex + 1}` : `大众评委${judgeIndex - 37}`,
-          judgeType: judgeIndex < 38 ? 'EXPERT' : 'PUBLIC',
-          institutionId: institutionIndex + 1,
-          institutionName: `机构${institutionIndex + 1}`,
-          scoreMode,
-          totalScore: Math.round((Math.random() * 20 + 25) * 10) / 10, // 25-45分
-          submitTime: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-          comment: Math.random() > 0.7 ? `评价意见${i}` : null,
-          itemScores: scoreMode === 'ITEM' ? generateItemScores() : null
-        })
-      }
-      
-      return mockData
-    }
-    
-    // 生成条目评分数据
-    const generateItemScores = () => {
-      return [
-        { categoryName: '基础管理', itemName: '组织建设', maxScore: 10, score: Math.round(Math.random() * 3 + 7), comment: '良好' },
-        { categoryName: '基础管理', itemName: '制度建设', maxScore: 8, score: Math.round(Math.random() * 2 + 6), comment: null },
-        { categoryName: '业务开展', itemName: '技术水平', maxScore: 15, score: Math.round(Math.random() * 4 + 11), comment: '优秀' },
-        { categoryName: '业务开展', itemName: '服务质量', maxScore: 12, score: Math.round(Math.random() * 3 + 9), comment: null }
-      ]
     }
     
     // 查看详情

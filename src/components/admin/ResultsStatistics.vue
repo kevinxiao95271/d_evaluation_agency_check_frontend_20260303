@@ -182,7 +182,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Download, View } from '@element-plus/icons-vue'
-import { taskApi } from '../../api'
+import { taskApi, scoreApi } from '../../api'
 
 export default {
   name: 'ResultsStatistics',
@@ -235,15 +235,8 @@ export default {
     // 加载任务列表
     const loadTasks = async () => {
       try {
-        // 这里应该调用获取所有任务的API
-        // const data = await taskApi.getList()
-        // tasks.value = data
-        
-        // 模拟数据
-        tasks.value = [
-          { id: 1, name: '2026年第一季度考核' },
-          { id: 2, name: '2025年第四季度考核' }
-        ]
+        const data = await taskApi.getList()
+        tasks.value = data || []
         
         // 默认选择第一个任务
         if (tasks.value.length > 0) {
@@ -262,47 +255,8 @@ export default {
       
       try {
         loading.value = true
-        
-        // 调用结果统计API
-        // const data = await scoreApi.getResults(selectedTaskId.value)
-        // results.value = data
-        
-        // 模拟数据
-        results.value = [
-          {
-            rank: 1,
-            institutionId: 1,
-            institutionName: '临床检验中心',
-            expertAvgScore: 41.5,
-            expertJudgeCount: 4,
-            expertContribution: 29.05,
-            publicAvgScore: 39.5,
-            publicJudgeCount: 4,
-            publicContribution: 7.9,
-            directorBonus: 8,
-            secretaryBonus: 2,
-            finalScore: 46.95,
-            itemResults: [
-              { categoryName: '基础管理', itemName: '组织建设', expertAvgScore: 8.5, publicAvgScore: 8.2, finalScore: 8.35 },
-              { categoryName: '基础管理', itemName: '制度建设', expertAvgScore: 9.0, publicAvgScore: 8.8, finalScore: 8.9 }
-            ]
-          },
-          {
-            rank: 2,
-            institutionId: 2,
-            institutionName: '医疗设备管理质量控制中心',
-            expertAvgScore: 40.0,
-            expertJudgeCount: 4,
-            expertContribution: 28.0,
-            publicAvgScore: 38.0,
-            publicJudgeCount: 4,
-            publicContribution: 7.6,
-            directorBonus: 8,
-            secretaryBonus: 0,
-            finalScore: 43.6
-          }
-        ]
-        
+        const data = await scoreApi.getResults(selectedTaskId.value)
+        results.value = data || []
       } catch (error) {
         console.error('加载结果数据失败:', error)
         ElMessage.error('加载结果数据失败')

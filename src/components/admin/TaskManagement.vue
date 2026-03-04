@@ -147,22 +147,8 @@ export default {
     const loadTasks = async () => {
       try {
         loading.value = true
-        // const data = await taskApi.getList()
-        // tasks.value = data
-        
-        // 模拟数据
-        tasks.value = [
-          {
-            id: 1,
-            name: '2026年第一季度考核',
-            period: '2026Q1',
-            startDate: '2026-01-01',
-            endDate: '2026-03-31',
-            isCurrent: 1,
-            status: 1,
-            description: '2026年第一季度机构考核评估任务'
-          }
-        ]
+        const data = await taskApi.getList()
+        tasks.value = data || []
       } catch (error) {
         console.error('加载任务列表失败:', error)
         ElMessage.error('加载任务列表失败')

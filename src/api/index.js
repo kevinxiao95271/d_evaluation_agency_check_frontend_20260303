@@ -54,24 +54,6 @@ export const judgeApi = {
   delete: (id) => api.delete(`/judge/${id}`)
 }
 
-export const taskApi = {
-  // 获取当前任务
-  getCurrent: () => api.get('/task/current'),
-  
-  // 获取待评任务列表
-  getPending: (judgeId) => api.get(`/task/pending?judgeId=${judgeId}`)
-}
-
-export const scoreApi = {
-  // 提交评分
-  submit: (data) => api.post('/score/submit', data)
-}
-
-export const templateApi = {
-  // 获取默认评分表模板
-  getDefault: () => api.get('/score-template/default')
-}
-
 export const institutionApi = {
   // 获取机构列表
   getList: () => api.get('/institution/list'),
@@ -85,8 +67,6 @@ export const institutionApi = {
   // 删除机构
   delete: (id) => api.delete(`/institution/${id}`)
 }
-
-export default api
 
 export const taskApi = {
   // 获取当前任务
@@ -211,3 +191,5 @@ export const systemConfigApi = {
   // 更新配置
   updateByKey: (key, value) => api.put(`/system-config/key/${key}?value=${value}`)
 }
+
+export default api
