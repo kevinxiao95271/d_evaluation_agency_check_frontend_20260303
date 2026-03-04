@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>部署状态检查</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .status-card { background: #f8f9fa; padding: 20px; margin: 15px 0; border-radius: 8px; border-left: 4px solid #007bff; }
+        .status-success { border-left-color: #28a745; background: #d4edda; }
+        .status-error { border-left-color: #dc3545; background: #f8d7da; }
+        .status-warning { border-left-color: #ffc107; background: #fff3cd; }
+        .check-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
+        .check-item:last-child { border-bottom: none; }
+        .status-icon { font-size: 20px; }
+        .url-list { background: #e9ecef; padding: 15px; border-radius: 6px; margin: 10px 0; }
+        .url-list a { display: block; margin: 5px 0; color: #007bff; text-decoration: none; }
+        .url-list a:hover { text-decoration: underline; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0056b3; }
+        .loading { color: #6c757d; font-style: italic; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 机构考核评估系统 - 部署状态</h1>
+        
+        <div class="status-card status-success">
+            <h3>✅ 部署成功</h3>
+            <p>系统已成功部署并运行在以下地址：</p>
+            <div class="url-list">
+                <a href="http://localhost:8080" target="_blank">🏠 系统首页: http://localhost:8080</a>
+                <a href="http://localhost:8080/test.html" target="_blank">🧪 API测试工具: http://localhost:8080/test.html</a>
+                <a href="http://localhost:8080/judge_accounts_test.html" target="_blank">👥 评委账号测试: http://localhost:8080/judge_accounts_test.html</a>
+            </div>
+        </div>
+
+        <div class="status-card">
+            <h3>📊 系统状态检查</h3>
+            <div id="statusChecks">
+                <div class="check-item">
+                    <span>前端HTTP服务器 (8080端口)</span>
+                    <span id="frontendStatus" class="loading">检查中...</span>
+                </div>
+                <div class="check-item">
+                    <span>后端API服务器 (5031端口)</span>
+                    <span id="backendStatus" class="loading">检查中...</span>
+                </div>
+                <div class="check-item">
+                    <span>评委登录接口</span>
+                    <span id="loginStatus" class="loading">检查中...</span>
+                </div>
+                <div class="check-item">
+                    <span>机构数据接口</span>
+                    <span id="institutionStatus" class="loading">检查中...</span>
+                </div>
+                <div class="check-item">
+                    <span>评委数据接口</span>
+                    <span id="judgeStatus" class="loading">检查中...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-card">
+            <h3>🎯 快速访问</h3>
+            <button onclick="window.open('http://localhost:8080', '_blank')">🏠 打开系统首页</button>
+            <button onclick="window.open('http://localhost:8080/test.html', '_blank')">🧪 API测试工具</button>
+            <button onclick="window.open('http://localhost:8080/judge_accounts_test.html', '_blank')">👥 评委账号测试</button>
+            <button onclick="checkAllStatus()">🔄 重新检查状态</button>
+        </div>
+
+        <div class="status-card">
+            <h3>📋 测试账号信息</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <h4>专家评委账号 (密码: 123456)</h4>
+                    <div style="font-family: monospace; background: #f8f9fa; padding: 10px; border-radius: 4px;">
+                        expert1, expert2, expert3, expert4, expert5<br>
+                        expert6, expert7, expert8, expert9, expert10<br>
+                        ... (总共38个专家账号)
+                    </div>
+                </div>
+                <div>
+                    <h4>大众评委账号 (密码: 123456)</h4>
+                    <div style="font-family: monospace; background: #f8f9fa; padding: 10px; border-radius: 4px;">
+                        public1, public2, public3, public4, public5<br>
+                        public6, public7, public8, public9, public10<br>
+                        ... (总共38个大众账号)
+                    </div>
+                </div>
+            </div>
+            <div style="margin-top: 15px;">
+                <h4>管理员账号</h4>
+                <div style="font-family: monospace; background: #fff3cd; padding: 10px; border-radius: 4px;">
+                    admin / admin123
+                </div>
+            </div>
+        </div>
+
+        <div class="status-card status-warning">
+            <h3>⚠️ Vue应用说明</h3>
+            <p>完整的Vue应用需要Node.js环境运行，当前提供的是静态测试页面。</p>
+            <p>要运行完整的Vue应用，请执行：</p>
+            <div style="background: #343a40; color: #fff; padding: 10px; border-radius: 4px; font-family: monospace;">
+                npm install<br>
+                npm run dev<br>
+                # 然后访问 http://localhost:5039
+            </div>
+        </div>
+
+        <div class="status-card">
+            <h3>📈 系统数据规模</h3>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; text-align: center;">
+                <div style="background: #e3f2fd; padding: 15px; border-radius: 6px;">
+                    <div style="font-size: 24px; font-weight: bold; color: #1976d2;">76</div>
+                    <div style="color: #666;">评委总数</div>
+                </div>
+                <div style="background: #e8f5e8; padding: 15px; border-radius: 6px;">
+                    <div style="font-size: 24px; font-weight: bold; color: #388e3c;">64</div>
+                    <div style="color: #666;">参评机构</div>
+                </div>
+                <div style="background: #fff3e0; padding: 15px; border-radius: 6px;">
+                    <div style="font-size: 24px; font-weight: bold; color: #f57c00;">2,812</div>
+                    <div style="color: #666;">评分任务</div>
+                </div>
+                <div style="background: #fce4ec; padding: 15px; border-radius: 6px;">
+                    <div style="font-size: 24px; font-weight: bold; color: #c2185b;">11</div>
+                    <div style="color: #666;">评分条目</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function checkStatus(url, elementId, name) {
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.code === 200 || response.ok) {
+                    document.getElementById(elementId).innerHTML = '<span class="status-icon" style="color: #28a745;">✅</span> 正常';
+                    return true;
+                } else {
+                    throw new Error('API返回错误');
+                }
+            } catch (error) {
+                document.getElementById(elementId).innerHTML = '<span class="status-icon" style="color: #dc3545;">❌</span> 失败';
+                return false;
+            }
+        }
+
+        async function checkAllStatus() {
+            // 重置状态
+            ['frontendStatus', 'backendStatus', 'loginStatus', 'institutionStatus', 'judgeStatus'].forEach(id => {
+                document.getElementById(id).innerHTML = '<span class="loading">检查中...</span>';
+            });
+
+            // 检查前端服务器
+            try {
+                const response = await fetch('http://localhost:8080/');
+                document.getElementById('frontendStatus').innerHTML = '<span class="status-icon" style="color: #28a745;">✅</span> 正常';
+            } catch (error) {
+                document.getElementById('frontendStatus').innerHTML = '<span class="status-icon" style="color: #dc3545;">❌</span> 失败';
+            }
+
+            // 检查后端API
+            await checkStatus('http://localhost:5031/api/task/current', 'backendStatus', '后端API');
+            
+            // 检查登录接口
+            await checkStatus('http://localhost:5031/api/judge/login?username=expert1&password=123456', 'loginStatus', '登录接口');
+            
+            // 检查机构接口
+            await checkStatus('http://localhost:5031/api/institution/list', 'institutionStatus', '机构接口');
+            
+            // 检查评委接口
+            await checkStatus('http://localhost:5031/api/judge/list', 'judgeStatus', '评委接口');
+        }
+
+        // 页面加载时自动检查
+        window.onload = function() {
+            checkAllStatus();
+        }
+    </script>
+</body>
+</html>
