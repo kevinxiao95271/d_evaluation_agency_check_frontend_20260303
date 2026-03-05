@@ -165,14 +165,20 @@ export const templateApi = {
 }
 
 export const bonusApi = {
-  // 获取附加项
-  get: (taskId, institutionId) => api.get(`/bonus/${taskId}/${institutionId}`),
+  // 获取单个附加项
+  get: (taskId, institutionId) => api.get(`/bonus?taskId=${taskId}&institutionId=${institutionId}`),
   
-  // 设置附加项
+  // 获取任务的所有附加项列表
+  getList: (taskId) => api.get(`/bonus/list/${taskId}`),
+  
+  // 设置附加项（创建或更新）
   set: (data) => api.post('/bonus', data),
   
   // 更新附加项
-  update: (id, data) => api.put(`/bonus/${id}`, data)
+  update: (id, data) => api.put(`/bonus/${id}`, data),
+  
+  // 批量设置（待后端实现）
+  batchSet: (dataList) => api.post('/bonus/batch', dataList)
 }
 
 export const systemConfigApi = {

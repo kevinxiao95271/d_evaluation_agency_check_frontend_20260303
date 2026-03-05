@@ -66,13 +66,10 @@
         
         <el-table-column prop="updateTime" label="更新时间" width="180" />
         
-        <el-table-column label="操作" width="150" fixed="right">
+        <el-table-column label="操作" width="100" fixed="right">
           <template #default="{ row }">
             <el-button size="small" @click="editBonus(row)" :icon="Edit">
               编辑
-            </el-button>
-            <el-button size="small" @click="viewHistory(row)" :icon="View">
-              历史
             </el-button>
           </template>
         </el-table-column>
@@ -122,45 +119,27 @@
       </template>
     </el-dialog>
 
-    <!-- 历史记录对话框 -->
-    <el-dialog title="操作历史" v-model="historyVisible" width="600px">
-      <el-timeline>
-        <el-timeline-item
-          v-for="record in historyRecords"
-          :key="record.id"
-          :timestamp="record.updateTime"
-        >
-          <div class="history-item">
-            <p><strong>操作人：</strong>{{ record.filledBy }}</p>
-            <p><strong>主任演讲：</strong>{{ record.directorPresentation ? '是' : '否' }}</p>
-            <p><strong>秘书参与：</strong>{{ record.secretaryParticipation ? '是' : '否' }}</p>
-            <p v-if="record.remark"><strong>备注：</strong>{{ record.remark }}</p>
-          </div>
-        </el-timeline-item>
-      </el-timeline>
-    </el-dialog>
+
   </div>
 </template>
 
 <script>
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Edit, View, Check, Close } from '@element-plus/icons-vue'
-import { taskApi, institutionApi } from '../../api'
+import { Edit, Check, Close } from '@element-plus/icons-vue'
+import { taskApi, institutionApi, bonusApi } from '../../api'
 
 export default {
   name: 'BonusManagement',
-  components: { Edit, View, Check, Close },
+  components: { Edit, Check, Close },
   setup() {
     const loading = ref(false)
     const saving = ref(false)
     const editVisible = ref(false)
-    const historyVisible = ref(false)
     const selectedTaskId = ref(null)
     
     const tasks = ref([])
     const bonusData = ref([])
-    const historyRecords = ref([])
     
     const editForm = ref({
       taskId: null,
@@ -195,17 +174,36 @@ export default {
         // 获取机构列表
         const institutions = await institutionApi.getList()
         
-        // 模拟附加项数据
-        bonusData.value = institutions.map(inst => ({
-          taskId: selectedTaskId.value,
-          institutionId: inst.id,
-          institutionName: inst.name,
-          directorPresentation: 0,
-          secretaryParticipation: 0,
-          filledBy: '',
-          updateTime: '',
-          remark: ''
-        }))
+        // 获取附加项列表
+        console.log('🔵 加载附加项列表, taskId:', selectedTaskId.value)
+        const bonusList = await bonusApi.getList(selectedTaskId.value)
+        console.log('✅ 附加项列表返回:', bonusList)
+        
+        // 创建机构-附加项映射
+        const bonusMap = new Map()
+        if (bonusList && bonusList.length > 0) {
+          bonusList.forEach(bonus => {
+            bonusMap.set(bonus.institutionId, bonus)
+          })
+        }
+        
+        // 合并机构列表和附加项数据
+        bonusData.value = institutions.map(inst => {
+          const bonus = bonusMap.get(inst.id)
+          return {
+            id: bonus?.id,
+            taskId: selectedTaskId.value,
+            institutionId: inst.id,
+            institutionName: inst.name,
+            directorPresentation: bonus?.directorPresentation || 0,
+            secretaryParticipation: bonus?.secretaryParticipation || 0,
+            filledBy: bonus?.filledBy || '',
+            updateTime: bonus?.updateTime || '',
+            remark: bonus?.remark || ''
+          }
+        })
+        
+        console.log('✅ 附加项数据加载完成，共', bonusData.value.length, '条')
         
       } catch (error) {
         console.error('加载附加项数据失败:', error)
@@ -217,16 +215,28 @@ export default {
     
     const updateBonus = async (row) => {
       try {
-        // 调用更新API
-        // await bonusApi.update(row)
+        // 调用真实 API 更新附加项
+        const data = {
+          taskId: row.taskId,
+          institutionId: row.institutionId,
+          directorPresentation: row.directorPresentation,
+          secretaryParticipation: row.secretaryParticipation
+        }
         
-        row.filledBy = '管理员'
+        console.log('🔵 调用 bonusApi.set:', data)
+        const result = await bonusApi.set(data)
+        console.log('✅ API 返回结果:', result)
+        
+        // 更新本地显示
+        row.filledBy = result.filledBy || '管理员'
         row.updateTime = new Date().toLocaleString()
         
         ElMessage.success('更新成功')
       } catch (error) {
         console.error('更新附加项失败:', error)
         ElMessage.error('更新附加项失败')
+        // 回滚开关状态
+        loadBonusData()
       }
     }
     
@@ -239,8 +249,17 @@ export default {
       try {
         saving.value = true
         
-        // 调用保存API
-        // await bonusApi.save(editForm.value)
+        // 调用真实 API 保存附加项
+        const data = {
+          taskId: editForm.value.taskId,
+          institutionId: editForm.value.institutionId,
+          directorPresentation: editForm.value.directorPresentation,
+          secretaryParticipation: editForm.value.secretaryParticipation
+        }
+        
+        console.log('🔵 调用 bonusApi.set (编辑):', data)
+        const result = await bonusApi.set(data)
+        console.log('✅ API 返回结果:', result)
         
         // 更新本地数据
         const index = bonusData.value.findIndex(item => 
@@ -249,7 +268,7 @@ export default {
         if (index !== -1) {
           bonusData.value[index] = {
             ...editForm.value,
-            filledBy: '管理员',
+            filledBy: result.filledBy || '管理员',
             updateTime: new Date().toLocaleString()
           }
         }
@@ -264,29 +283,6 @@ export default {
       }
     }
     
-    const viewHistory = (row) => {
-      // 模拟历史记录
-      historyRecords.value = [
-        {
-          id: 1,
-          filledBy: '管理员',
-          directorPresentation: 1,
-          secretaryParticipation: 0,
-          updateTime: '2026-03-04 10:30:00',
-          remark: '主任确认参与演讲'
-        },
-        {
-          id: 2,
-          filledBy: '系统管理员',
-          directorPresentation: 0,
-          secretaryParticipation: 0,
-          updateTime: '2026-03-01 09:00:00',
-          remark: '初始化数据'
-        }
-      ]
-      
-      historyVisible.value = true
-    }
     
     const batchSetDirector = async () => {
       try {
@@ -296,15 +292,27 @@ export default {
           { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' }
         )
         
-        bonusData.value.forEach(item => {
+        // TODO: 等待后端提供批量接口 POST /api/bonus/batch
+        // 临时方案：逐个调用
+        ElMessage.info('正在批量更新...')
+        
+        for (const item of bonusData.value) {
+          const data = {
+            taskId: item.taskId,
+            institutionId: item.institutionId,
+            directorPresentation: 1,
+            secretaryParticipation: item.secretaryParticipation
+          }
+          await bonusApi.set(data)
           item.directorPresentation = 1
           item.filledBy = '管理员'
           item.updateTime = new Date().toLocaleString()
-        })
+        }
         
         ElMessage.success('批量设置成功')
       } catch (error) {
         if (error !== 'cancel') {
+          console.error('批量设置失败:', error)
           ElMessage.error('批量设置失败')
         }
       }
@@ -318,15 +326,27 @@ export default {
           { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' }
         )
         
-        bonusData.value.forEach(item => {
+        // TODO: 等待后端提供批量接口 POST /api/bonus/batch
+        // 临时方案：逐个调用
+        ElMessage.info('正在批量更新...')
+        
+        for (const item of bonusData.value) {
+          const data = {
+            taskId: item.taskId,
+            institutionId: item.institutionId,
+            directorPresentation: item.directorPresentation,
+            secretaryParticipation: 1
+          }
+          await bonusApi.set(data)
           item.secretaryParticipation = 1
           item.filledBy = '管理员'
           item.updateTime = new Date().toLocaleString()
-        })
+        }
         
         ElMessage.success('批量设置成功')
       } catch (error) {
         if (error !== 'cancel') {
+          console.error('批量设置失败:', error)
           ElMessage.error('批量设置失败')
         }
       }
@@ -340,16 +360,28 @@ export default {
           { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' }
         )
         
-        bonusData.value.forEach(item => {
+        // TODO: 等待后端提供批量接口 POST /api/bonus/batch
+        // 临时方案：逐个调用
+        ElMessage.info('正在批量清空...')
+        
+        for (const item of bonusData.value) {
+          const data = {
+            taskId: item.taskId,
+            institutionId: item.institutionId,
+            directorPresentation: 0,
+            secretaryParticipation: 0
+          }
+          await bonusApi.set(data)
           item.directorPresentation = 0
           item.secretaryParticipation = 0
           item.filledBy = '管理员'
           item.updateTime = new Date().toLocaleString()
-        })
+        }
         
         ElMessage.success('批量清空成功')
       } catch (error) {
         if (error !== 'cancel') {
+          console.error('批量清空失败:', error)
           ElMessage.error('批量清空失败')
         }
       }
@@ -360,9 +392,9 @@ export default {
     })
     
     return {
-      loading, saving, editVisible, historyVisible, selectedTaskId,
-      tasks, bonusData, historyRecords, editForm,
-      loadBonusData, updateBonus, editBonus, saveBonus, viewHistory,
+      loading, saving, editVisible, selectedTaskId,
+      tasks, bonusData, editForm,
+      loadBonusData, updateBonus, editBonus, saveBonus,
       batchSetDirector, batchSetSecretary, batchClear
     }
   }
@@ -407,8 +439,5 @@ export default {
   margin-right: 12px;
 }
 
-.history-item p {
-  margin: 4px 0;
-  color: #666;
-}
+
 </style>
